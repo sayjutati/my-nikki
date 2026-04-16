@@ -135,23 +135,28 @@ export default function CalendarPage() {
     if (!user) return <div className="min-h-screen flex items-center justify-center text-rose-900 bg-rose-50">読み込み中...</div>;
 
     return (
-        <div className="h-screen bg-rose-50 text-rose-900 p-4 lg:p-6 flex flex-col items-center overflow-hidden font-sans">
+        // 【変更】スマホの時は下部に余白（pb-20）をあけて、高さもスマホ向け（100dvh）にする
+        <div className="h-[100dvh] bg-rose-50 text-rose-900 p-4 pb-20 lg:pb-6 lg:p-6 flex flex-col items-center overflow-hidden font-sans">
             <header className="w-full max-w-7xl bg-white/90 backdrop-blur-md shadow-[0_0_20px_rgba(225,29,72,0.15)] rounded-2xl px-6 py-4 flex justify-between items-center mb-6 border border-rose-100 shrink-0">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400">
                     My Nikki
                 </h1>
                 <div className="flex items-center gap-2 sm:gap-4">
-                    {/* 【変更】ユーザーネームがあればそれを表示、なければメアド */}
+                    {/* ユーザーネームがあればそれを表示、なければメアド */}
                     <span className="text-sm font-bold text-rose-400 hidden sm:inline">{myUsername || user.email}</span>
-                    <button onClick={() => router.push("/search")} className="text-sm font-bold text-rose-600 hover:text-white bg-rose-100 hover:bg-rose-500 px-4 py-2 rounded-full transition-colors shadow-sm">
-                        🔍 探す
-                    </button>
-                    <button onClick={() => router.push("/settings")} className="text-sm font-bold text-rose-600 hover:text-white bg-rose-100 hover:bg-rose-500 px-4 py-2 rounded-full transition-colors shadow-sm">
-                        ⚙️ 設定
-                    </button>
-                    <button onClick={handleLogout} className="text-sm font-bold text-rose-500 hover:text-rose-700 bg-rose-100 px-4 py-2 rounded-full hover:bg-rose-200 transition-colors shadow-sm">
-                        ログアウト
-                    </button>
+                    
+                    {/* 【変更】PCの時だけ表示するボタンたち */}
+                    <div className="hidden sm:flex gap-2">
+                        <button onClick={() => router.push("/search")} className="text-sm font-bold text-rose-600 hover:text-white bg-rose-100 hover:bg-rose-500 px-4 py-2 rounded-full transition-colors shadow-sm">
+                            🔍 探す
+                        </button>
+                        <button onClick={() => router.push("/settings")} className="text-sm font-bold text-rose-600 hover:text-white bg-rose-100 hover:bg-rose-500 px-4 py-2 rounded-full transition-colors shadow-sm">
+                            ⚙️ 設定
+                        </button>
+                        <button onClick={handleLogout} className="text-sm font-bold text-rose-500 hover:text-rose-700 bg-rose-100 px-4 py-2 rounded-full hover:bg-rose-200 transition-colors shadow-sm">
+                            ログアウト
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -166,7 +171,7 @@ export default function CalendarPage() {
                             className="px-4 py-2 bg-white border border-rose-200 rounded-xl font-bold text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-400 shadow-sm cursor-pointer"
                         >
                             <option value={user.id}>自分の日記</option>
-                            {/* 【変更】相手のユーザーネームを表示 */}
+                            {/* 相手のユーザーネームを表示 */}
                             {sharedUsers.map(su => (
                                 <option key={su.owner_id} value={su.owner_id}>
                                     {su.username} さんの日記
@@ -193,6 +198,26 @@ export default function CalendarPage() {
                 </div>
             </main>
 
+            {/* 【追加】スマホ用ボトムナビゲーション（画面下部に固定） */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-rose-100 flex justify-around items-center h-[70px] pb-safe z-50 shadow-[0_-5px_15px_rgba(225,29,72,0.05)]">
+                <button onClick={() => router.push("/calendar")} className="flex flex-col items-center justify-center w-full h-full text-rose-500 bg-rose-50/50">
+                    <span className="text-xl mb-0.5">📅</span>
+                    <span className="text-[10px] font-bold">カレンダー</span>
+                </button>
+                <button onClick={() => router.push("/search")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🔍</span>
+                    <span className="text-[10px] font-bold">探す</span>
+                </button>
+                <button onClick={() => router.push("/settings")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">⚙️</span>
+                    <span className="text-[10px] font-bold">設定</span>
+                </button>
+                <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🚪</span>
+                    <span className="text-[10px] font-bold">ログアウト</span>
+                </button>
+            </nav>
+
             <style jsx global>{`
                 .calendar-container .react-calendar { width: 100% !important; height: 100% !important; background: transparent !important; border: none !important; font-family: inherit; display: flex; flex-direction: column; }
                 .calendar-container .react-calendar__navigation { height: 60px; margin-bottom: 10px; }
@@ -207,6 +232,8 @@ export default function CalendarPage() {
                 .calendar-container .react-calendar__tile--disabled { background-color: transparent !important; color: #fda4af !important; cursor: not-allowed; }
                 .calendar-container .react-calendar__tile--disabled:hover { transform: none !important; background: transparent !important; }
                 .calendar-container abbr[title] { text-decoration: none; }
+                /* iPhoneの画面下部の安全領域（セーフエリア）を確保 */
+                .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
             `}</style>
         </div>
     );
