@@ -9,7 +9,7 @@ export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     
-    // 【追加】プロフィール用
+    // プロフィール用
     const [username, setUsername] = useState("");
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileMessage, setProfileMessage] = useState({ text: "", isError: false });
@@ -34,10 +34,15 @@ export default function SettingsPage() {
 
     const router = useRouter();
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
+    };
+
     const fetchSharesAndProfile = async (userId: string, userEmail: string | undefined) => {
         if (!userEmail) return;
 
-        // 【追加】自分のプロフィール（ユーザーネーム）を取得
+        // 自分のプロフィール（ユーザーネーム）を取得
         const { data: profileData } = await supabase.from('profiles').select('username').eq('id', userId).single();
         if (profileData?.username) setUsername(profileData.username);
 
@@ -77,7 +82,6 @@ export default function SettingsPage() {
         setTimeout(() => window.location.reload(), 800);
     };
 
-    // 【追加】プロフィール更新処理
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         setProfileLoading(true);
@@ -174,12 +178,12 @@ export default function SettingsPage() {
     if (loading) return <div className="min-h-screen flex items-center justify-center text-rose-900 bg-rose-50">読み込み中...</div>;
 
     return (
-        <div className="min-h-screen bg-rose-50 p-4 lg:p-8 text-rose-900 font-sans">
+        <div className="min-h-[100dvh] bg-rose-50 p-4 pb-24 lg:p-8 lg:pb-8 text-rose-900 font-sans relative">
             <div className="max-w-4xl mx-auto mb-8 bg-white/80 backdrop-blur-md rounded-2xl p-4 flex justify-between items-center border border-rose-100 shadow-[0_0_20px_rgba(225,29,72,0.15)]">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 drop-shadow-sm">
                     ⚙️ 設定 (マイページ)
                 </h1>
-                <Link href="/calendar" className="px-5 py-2 bg-rose-100 text-rose-700 font-bold rounded-full hover:bg-rose-200 transition-colors shadow-sm">
+                <Link href="/calendar" className="hidden sm:block px-5 py-2 bg-rose-100 text-rose-700 font-bold rounded-full hover:bg-rose-200 transition-colors shadow-sm">
                     カレンダーに戻る
                 </Link>
             </div>
@@ -352,6 +356,31 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* スマホ用ボトムナビゲーション */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-rose-100 flex justify-around items-center h-[70px] pb-safe z-50 shadow-[0_-5px_15px_rgba(225,29,72,0.05)]">
+                <button onClick={() => router.push("/calendar")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">📅</span>
+                    <span className="text-[10px] font-bold">カレンダー</span>
+                </button>
+                <button onClick={() => router.push("/search")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🔍</span>
+                    <span className="text-[10px] font-bold">探す</span>
+                </button>
+                {/* 設定タブをアクティブ状態に */}
+                <button onClick={() => router.push("/settings")} className="flex flex-col items-center justify-center w-full h-full text-rose-500 bg-rose-50/50">
+                    <span className="text-xl mb-0.5">⚙️</span>
+                    <span className="text-[10px] font-bold">設定</span>
+                </button>
+                <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🚪</span>
+                    <span className="text-[10px] font-bold">ログアウト</span>
+                </button>
+            </nav>
+
+            <style jsx global>{`
+                .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+            `}</style>
         </div>
     );
 }

@@ -41,6 +41,11 @@ function DiaryPage(props: { params: Params }) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
+    };
+
     const fetchUserAndDiaries = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
@@ -179,7 +184,7 @@ function DiaryPage(props: { params: Params }) {
     const imageCount = diaries.filter(d => d.image_url).length;
 
     return (
-        <div className="min-h-screen bg-rose-50 p-4 lg:p-8 text-rose-900 font-sans">
+        <div className="min-h-[100dvh] bg-rose-50 p-4 pb-24 lg:p-8 lg:pb-8 text-rose-900 font-sans relative">
             <div className="max-w-7xl mx-auto mb-8 bg-white/80 backdrop-blur-md rounded-2xl p-4 flex justify-between items-center border border-rose-100 shadow-[0_0_20px_rgba(225,29,72,0.15)]">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 drop-shadow-sm flex items-center gap-2">
                     {dateParam} の日記 {isSharedMode && <span className="text-sm bg-rose-100 text-rose-600 px-3 py-1 rounded-full border border-rose-200">👀 閲覧モード</span>}
@@ -193,7 +198,8 @@ function DiaryPage(props: { params: Params }) {
             <div className={`mx-auto grid grid-cols-1 ${isSharedMode ? 'max-w-4xl' : 'max-w-7xl lg:grid-cols-2'} gap-8`}>
                 
                 {/* 左側：入力履歴（閲覧時はこれがメインになる） */}
-                <div className="bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(225,29,72,0.1)] border border-rose-50 flex flex-col h-[75vh]">
+                {/* 【変更】スマホでは下に（order-2）、PCでは左に（lg:order-1）なるように追加。高さもスマホ用に調整。 */}
+                <div className="order-2 lg:order-1 bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(225,29,72,0.1)] border border-rose-50 flex flex-col h-[60vh] lg:h-[75vh]">
                     <h2 className="text-xl font-bold text-rose-800 mb-4 border-b-2 border-rose-100 pb-2">
                         {isSharedMode ? "相手の日記" : "過去の入力履歴"}
                     </h2>
@@ -252,8 +258,9 @@ function DiaryPage(props: { params: Params }) {
                 </div>
 
                 {/* 右側：新しく書く (閲覧モードのときは丸ごと非表示！) */}
+                {/* 【変更】スマホでは上に（order-1）、PCでは右に（lg:order-2）なるように追加。高さもスマホ用に調整。 */}
                 {!isSharedMode && (
-                    <div className="bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(159,18,57,0.15)] border border-rose-100 flex flex-col h-[75vh]">
+                    <div className="order-1 lg:order-2 bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(159,18,57,0.15)] border border-rose-100 flex flex-col h-[70vh] lg:h-[75vh]">
                         <h2 className={`text-xl font-bold mb-4 border-b-2 pb-2 flex justify-between items-center ${editingId ? 'text-rose-600 border-rose-200' : 'text-rose-800 border-rose-100'}`}>
                             <span>{editingId ? "✍️ 日記を編集する" : "新しく書く"}</span>
                             <span className="text-sm font-bold text-rose-400 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
@@ -305,12 +312,33 @@ function DiaryPage(props: { params: Params }) {
                     </div>
                 )}
             </div>
+
+            {/* スマホ用ボトムナビゲーション */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-rose-100 flex justify-around items-center h-[70px] pb-safe z-50 shadow-[0_-5px_15px_rgba(225,29,72,0.05)]">
+                <button onClick={() => router.push("/calendar")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">📅</span>
+                    <span className="text-[10px] font-bold">カレンダー</span>
+                </button>
+                <button onClick={() => router.push("/search")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🔍</span>
+                    <span className="text-[10px] font-bold">探す</span>
+                </button>
+                <button onClick={() => router.push("/settings")} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">⚙️</span>
+                    <span className="text-[10px] font-bold">設定</span>
+                </button>
+                <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full text-rose-400 hover:text-rose-500 hover:bg-rose-50/50 transition-colors">
+                    <span className="text-xl mb-0.5">🚪</span>
+                    <span className="text-[10px] font-bold">ログアウト</span>
+                </button>
+            </nav>
             
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #fecdd3; border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #fda4af; }
+                .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
             `}</style>
         </div>
     );
