@@ -9,6 +9,11 @@ export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     
+    // 【追加】プロフィール用
+    const [username, setUsername] = useState("");
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileMessage, setProfileMessage] = useState({ text: "", isError: false });
+
     // パスワード変更用
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,18 +25,21 @@ export default function SettingsPage() {
     const [fontFamily, setFontFamily] = useState("sans");
     const [designMessage, setDesignMessage] = useState("");
 
-    // 【追加】共有機能用のステート
+    // 共有機能用のステート
     const [shareEmail, setShareEmail] = useState("");
     const [shareLoading, setShareLoading] = useState(false);
     const [shareMessage, setShareMessage] = useState({ text: "", isError: false });
-    const [myShares, setMyShares] = useState<any[]>([]); // 自分が送った招待
-    const [receivedRequests, setReceivedRequests] = useState<any[]>([]); // 自分宛ての招待
+    const [myShares, setMyShares] = useState<any[]>([]); 
+    const [receivedRequests, setReceivedRequests] = useState<any[]>([]); 
 
     const router = useRouter();
 
-    // 【変更】userEmail が「無いかも（undefined）」ってことを許してあげる
-    const fetchShares = async (userId: string, userEmail: string | undefined) => {
-        if (!userEmail) return; // メールアドレスが無い場合は何もしないで終わる
+    const fetchSharesAndProfile = async (userId: string, userEmail: string | undefined) => {
+        if (!userEmail) return;
+
+        // 【追加】自分のプロフィール（ユーザーネーム）を取得
+        const { data: profileData } = await supabase.from('profiles').select('username').eq('id', userId).single();
+        if (profileData?.username) setUsername(profileData.username);
 
         // 自分が送った招待を取得
         const { data: myData } = await supabase.from('diary_shares').select('*').eq('owner_id', userId);
@@ -56,8 +64,7 @@ export default function SettingsPage() {
             if (savedTheme) setThemeColor(savedTheme);
             if (savedFont) setFontFamily(savedFont);
 
-            // 【追加】共有情報の読み込み
-            await fetchShares(session.user.id, session.user.email);
+            await fetchSharesAndProfile(session.user.id, session.user.email);
             setLoading(false);
         };
         checkUser();
@@ -68,6 +75,22 @@ export default function SettingsPage() {
         localStorage.setItem("appFont", fontFamily);
         setDesignMessage("デザインを適用しました！✨");
         setTimeout(() => window.location.reload(), 800);
+    };
+
+    // 【追加】プロフィール更新処理
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setProfileLoading(true);
+        setProfileMessage({ text: "", isError: false });
+        try {
+            const { error } = await supabase.from("profiles").upsert([{ id: user.id, email: user.email, username }]);
+            if (error) throw error;
+            setProfileMessage({ text: "プロフィールを更新しました！", isError: false });
+        } catch (error: any) {
+            setProfileMessage({ text: "エラー: " + error.message, isError: true });
+        } finally {
+            setProfileLoading(false);
+        }
     };
 
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -97,7 +120,6 @@ export default function SettingsPage() {
         }
     };
 
-    // 【追加】共有リクエストを送る
     const handleSendShare = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!shareEmail.trim()) return;
@@ -123,7 +145,7 @@ export default function SettingsPage() {
 
             setShareMessage({ text: "招待リクエストを送りました！", isError: false });
             setShareEmail("");
-            fetchShares(user.id, user.email);
+            fetchSharesAndProfile(user.id, user.email);
         } catch (error: any) {
             setShareMessage({ text: error.message, isError: true });
         } finally {
@@ -131,21 +153,19 @@ export default function SettingsPage() {
         }
     };
 
-    // 【追加】届いたリクエストを承認する
     const handleAcceptShare = async (id: string) => {
         try {
             await supabase.from('diary_shares').update({ status: 'accepted' }).eq('id', id);
-            fetchShares(user.id, user.email);
+            fetchSharesAndProfile(user.id, user.email);
         } catch (error) {
             console.error(error);
         }
     };
 
-    // 【追加】リクエストを拒否、または共有を解除する
     const handleDeleteShare = async (id: string) => {
         try {
             await supabase.from('diary_shares').delete().eq('id', id);
-            fetchShares(user.id, user.email);
+            fetchSharesAndProfile(user.id, user.email);
         } catch (error) {
             console.error(error);
         }
@@ -206,31 +226,54 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                {/* 右側：セキュリティ */}
-                <div className="bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(159,18,57,0.15)] border border-rose-100">
-                    <h2 className="text-xl font-bold text-rose-800 mb-6 border-b-2 border-rose-100 pb-2">🔒 セキュリティ</h2>
-                    <form onSubmit={handlePasswordChange} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-bold text-rose-700 mb-1">新しいパスワード</label>
-                            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="6文字以上" required />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-rose-700 mb-1">新しいパスワード (確認用)</label>
-                            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="もう一度入力してね" required />
-                        </div>
-                        {passwordMessage.text && (
-                            <div className={`p-3 rounded-xl text-sm font-bold text-center ${passwordMessage.isError ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"}`}>
-                                {passwordMessage.text}
+                {/* 右側：プロフィールとセキュリティ */}
+                <div className="flex flex-col gap-8">
+                    {/* プロフィール設定 */}
+                    <div className="bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(159,18,57,0.15)] border border-rose-100">
+                        <h2 className="text-xl font-bold text-rose-800 mb-6 border-b-2 border-rose-100 pb-2">👤 プロフィール</h2>
+                        <form onSubmit={handleUpdateProfile} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-rose-700 mb-1">ユーザーネーム（表示名）</label>
+                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="例: たろう" required />
+                                <p className="text-xs text-gray-500 mt-2">※カレンダー画面や、共有した相手にこの名前が表示されます。</p>
                             </div>
-                        )}
-                        <button type="submit" disabled={passwordLoading} className="w-full py-4 px-6 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold text-lg rounded-xl hover:from-rose-500 hover:to-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-300 disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(225,29,72,0.4)] transform hover:-translate-y-0.5 mt-2">
-                            {passwordLoading ? "更新中..." : "パスワードを変更する"}
-                        </button>
-                    </form>
+                            {profileMessage.text && (
+                                <div className={`p-3 rounded-xl text-sm font-bold text-center ${profileMessage.isError ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"}`}>
+                                    {profileMessage.text}
+                                </div>
+                            )}
+                            <button type="submit" disabled={profileLoading} className="w-full py-4 px-6 bg-rose-100 text-rose-600 font-bold text-lg rounded-xl hover:bg-rose-200 focus:outline-none focus:ring-4 focus:ring-rose-300 disabled:opacity-50 transition-all shadow-sm transform hover:-translate-y-0.5 mt-2">
+                                {profileLoading ? "更新中..." : "名前を保存する"}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* セキュリティ */}
+                    <div className="bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(159,18,57,0.15)] border border-rose-100">
+                        <h2 className="text-xl font-bold text-rose-800 mb-6 border-b-2 border-rose-100 pb-2">🔒 パスワード変更</h2>
+                        <form onSubmit={handlePasswordChange} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-rose-700 mb-1">新しいパスワード</label>
+                                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="6文字以上" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-rose-700 mb-1">新しいパスワード (確認用)</label>
+                                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="もう一度入力してね" required />
+                            </div>
+                            {passwordMessage.text && (
+                                <div className={`p-3 rounded-xl text-sm font-bold text-center ${passwordMessage.isError ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"}`}>
+                                    {passwordMessage.text}
+                                </div>
+                            )}
+                            <button type="submit" disabled={passwordLoading} className="w-full py-4 px-6 bg-rose-50 text-rose-500 font-bold text-lg rounded-xl hover:bg-rose-100 focus:outline-none transition-all shadow-sm mt-2">
+                                {passwordLoading ? "更新中..." : "パスワードを変更する"}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            {/* 【追加】共有設定エリア（下部にフル幅で追加） */}
+            {/* 共有設定エリア */}
             <div className="max-w-4xl mx-auto bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(225,29,72,0.1)] border border-rose-50">
                 <h2 className="text-xl font-bold text-rose-800 mb-6 border-b-2 border-rose-100 pb-2">🤝 日記の共有設定</h2>
                 
@@ -241,24 +284,13 @@ export default function SettingsPage() {
                         <p className="text-sm text-gray-500 mb-4">相手のメールアドレスを入力して招待します。相手がこのアプリでログインした際に承認できます。</p>
                         
                         <form onSubmit={handleSendShare} className="space-y-4">
-                            <input
-                                type="email"
-                                value={shareEmail}
-                                onChange={(e) => setShareEmail(e.target.value)}
-                                className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all"
-                                placeholder="相手のメールアドレス"
-                                required
-                            />
+                            <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="w-full px-4 py-3 bg-rose-50/50 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-rose-900 font-medium transition-all" placeholder="相手のメールアドレス" required />
                             {shareMessage.text && (
                                 <p className={`text-sm font-bold ${shareMessage.isError ? "text-red-500" : "text-rose-600"}`}>
                                     {shareMessage.text}
                                 </p>
                             )}
-                            <button
-                                type="submit"
-                                disabled={shareLoading}
-                                className="w-full py-3 px-6 bg-rose-500 text-white font-bold rounded-xl hover:bg-rose-600 transition-all shadow-sm"
-                            >
+                            <button type="submit" disabled={shareLoading} className="w-full py-3 px-6 bg-rose-500 text-white font-bold rounded-xl hover:bg-rose-600 transition-all shadow-sm">
                                 {shareLoading ? "送信中..." : "招待リクエストを送る"}
                             </button>
                         </form>
@@ -315,7 +347,7 @@ export default function SettingsPage() {
                             </ul>
                         )}
                         <p className="text-xs text-gray-400 mt-4">
-                            ※「承認」すると、相手の日記があなたのカレンダー画面から見れるようになります。（※表示機能は次に追加するね！）
+                            ※「承認」すると、相手の日記があなたのカレンダー画面から見れるようになります。
                         </p>
                     </div>
                 </div>
