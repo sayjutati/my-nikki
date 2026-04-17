@@ -80,7 +80,7 @@ export default function SettingsPage() {
         localStorage.setItem("appFont", fontFamily);
         setDesignMessage("デザインを適用しました！✨");
         
-        // 【変更】リロードではなく、イベントを発行して一瞬で切り替える
+        // リロードではなく、イベントを発行して一瞬で切り替える
         window.dispatchEvent(new Event("themeChanged"));
         
         // メッセージを3秒後にスッと消す
@@ -360,6 +360,13 @@ export default function SettingsPage() {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* プライバシーポリシーへのリンク */}
+            <div className="max-w-4xl mx-auto mt-6 mb-8 text-center pb-8 sm:pb-0">
+                <Link href="/privacy" className="text-sm font-bold text-rose-400 hover:text-rose-600 transition-colors underline underline-offset-4">
+                    プライバシーポリシー
+                </Link>
             </div>
 
             {/* スマホ用ボトムナビゲーション */}
