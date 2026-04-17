@@ -79,7 +79,12 @@ export default function SettingsPage() {
         localStorage.setItem("appTheme", themeColor);
         localStorage.setItem("appFont", fontFamily);
         setDesignMessage("デザインを適用しました！✨");
-        setTimeout(() => window.location.reload(), 800);
+        
+        // 【変更】リロードではなく、イベントを発行して一瞬で切り替える
+        window.dispatchEvent(new Event("themeChanged"));
+        
+        // メッセージを3秒後にスッと消す
+        setTimeout(() => setDesignMessage(""), 3000);
     };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {

@@ -7,10 +7,24 @@ export default function ThemeApplier() {
     const [font, setFont] = useState("sans");
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("appTheme");
-        const savedFont = localStorage.getItem("appFont");
-        if (savedTheme) setTheme(savedTheme);
-        if (savedFont) setFont(savedFont);
+        const updateTheme = () => {
+            const savedTheme = localStorage.getItem("appTheme");
+            const savedFont = localStorage.getItem("appFont");
+            if (savedTheme) setTheme(savedTheme);
+            if (savedFont) setFont(savedFont);
+        };
+
+        // 最初の読み込み時
+        updateTheme();
+
+        // 【追加】「themeChanged」という合図が来たら瞬時に色を変える！
+        window.addEventListener("themeChanged", updateTheme);
+        window.addEventListener("storage", updateTheme);
+
+        return () => {
+            window.removeEventListener("themeChanged", updateTheme);
+            window.removeEventListener("storage", updateTheme);
+        };
     }, []);
 
     let styles = "";
