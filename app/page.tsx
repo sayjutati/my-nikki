@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,17 @@ export default function Login() {
     const [message, setMessage] = useState("");
     const router = useRouter();
 
+    // 【復活】すでにログイン状態なら、自動でカレンダー画面に飛ばす！
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                router.push("/calendar");
+            }
+        };
+        checkUser();
+    }, [router]);
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -20,12 +31,19 @@ export default function Login() {
 
         if (isLogin) {
             const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) setMessage(error.message);
-            else router.push("/"); 
+            if (error) {
+                setMessage(error.message);
+            } else {
+                // 【修正】ココ！ "/" じゃなくて "/calendar" に直したよ！
+                router.push("/calendar"); 
+            }
         } else {
             const { error } = await supabase.auth.signUp({ email, password });
-            if (error) setMessage(error.message);
-            else setMessage("確認メールを送信しました！");
+            if (error) {
+                setMessage(error.message);
+            } else {
+                setMessage("確認メールを送信しました！メールのリンクをクリックしてください。");
+            }
         }
         setLoading(false);
     };
