@@ -41,8 +41,8 @@ export default function Login() {
             if (error) {
                 setMessage(error.message);
             } else {
-                // 【修正】メール認証なし！登録成功したら即カレンダーへGO！
-                router.push("/calendar");
+                // 【修正】メール認証あり版！登録後はメールを確認するように促す！
+                setMessage("確認メールを送信しました！メールのリンクをクリックして登録を完了してください。");
             }
         }
         setLoading(false);
@@ -84,7 +84,7 @@ export default function Login() {
                     </div>
 
                     {message && (
-                        <p className="text-sm text-center font-bold p-3 rounded-xl bg-red-100 text-red-600">
+                        <p className={`text-sm text-center font-bold p-3 rounded-xl ${message.includes("確認") ? "bg-rose-100 text-rose-600" : "bg-red-100 text-red-600"}`}>
                             {message}
                         </p>
                     )}
@@ -106,7 +106,6 @@ export default function Login() {
                         {isLogin ? "アカウントがない場合はこちらから登録" : "すでにアカウントがある場合はログイン"}
                     </button>
                     
-                    {/* プライバシーポリシーへのリンク */}
                     <Link href="/privacy" className="text-xs font-bold text-rose-300 hover:text-rose-500 transition-colors underline underline-offset-4">
                         プライバシーポリシー
                     </Link>
