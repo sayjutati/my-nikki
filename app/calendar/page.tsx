@@ -80,7 +80,8 @@ export default function CalendarPage() {
             if (data) {
                 data.forEach(d => {
                     if (!diaryMap[d.entry_date]) diaryMap[d.entry_date] = [];
-                    if (diaryMap[d.entry_date].length < 3) {
+                    // 【変更】カレンダーの見た目を崩さないために、一旦多めにカウントしておく
+                    if (diaryMap[d.entry_date].length < 10) {
                         diaryMap[d.entry_date].push({
                             title: d.title || "📝 日記",
                             hasImage: !!d.image_url
@@ -119,12 +120,34 @@ export default function CalendarPage() {
             const entries = writtenDiaries[formattedDate];
             if (entries && entries.length > 0) {
                 return (
-                    <div className="flex flex-col items-center mt-1 w-full px-1 overflow-hidden gap-1">
-                        {entries.map((entry, idx) => (
-                            <div key={idx} className={`text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded truncate w-full max-w-full text-center border shadow-sm font-bold ${entry.hasImage ? 'text-white bg-gradient-to-r from-rose-500 to-rose-400 border-rose-400' : 'text-rose-700 bg-rose-100/80 border-rose-200/50'}`}>
-                                {entry.hasImage && "🖼️ "}{entry.title}
+                    <div className="flex flex-col items-center mt-1 w-full px-0.5 sm:px-1 overflow-hidden gap-0.5 sm:gap-1">
+                        {/* 1個目：常に表示（PCもスマホも） */}
+                        {entries.length > 0 && (
+                            <div className={`text-[9px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate w-full max-w-full text-center border shadow-sm font-bold ${entries[0].hasImage ? 'text-white bg-gradient-to-r from-rose-500 to-rose-400 border-rose-400' : 'text-rose-700 bg-rose-100/80 border-rose-200/50'}`}>
+                                {entries[0].hasImage && "🖼️ "}{entries[0].title}
                             </div>
-                        ))}
+                        )}
+                        
+                        {/* 2個目：PC（sm以上）の時だけ表示 */}
+                        {entries.length > 1 && (
+                            <div className={`hidden sm:block text-[9px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate w-full max-w-full text-center border shadow-sm font-bold ${entries[1].hasImage ? 'text-white bg-gradient-to-r from-rose-500 to-rose-400 border-rose-400' : 'text-rose-700 bg-rose-100/80 border-rose-200/50'}`}>
+                                {entries[1].hasImage && "🖼️ "}{entries[1].title}
+                            </div>
+                        )}
+
+                        {/* スマホ用「+〇件」（2個以上ある場合、1個引いた数を表示） */}
+                        {entries.length > 1 && (
+                            <div className="sm:hidden text-[10px] text-rose-500 font-bold mt-0.5">
+                                +{entries.length - 1}
+                            </div>
+                        )}
+
+                        {/* PC用「+〇件」（3個以上ある場合、2個引いた数を表示） */}
+                        {entries.length > 2 && (
+                            <div className="hidden sm:block text-xs text-rose-500 font-bold mt-0.5">
+                                +{entries.length - 2}
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -160,7 +183,8 @@ export default function CalendarPage() {
                 </div>
             </header>
 
-            <main className="w-full max-w-7xl flex-1 bg-white rounded-3xl shadow-[0_0_40px_rgba(225,29,72,0.1)] border border-rose-100 p-4 sm:p-6 flex flex-col min-h-0 relative">
+            {/* 【変更】overflow-hidden を外して overflow-y-auto に変更！これでカレンダーが見切れてもスクロールできる！ */}
+            <main className="w-full max-w-7xl flex-1 bg-white rounded-3xl shadow-[0_0_40px_rgba(225,29,72,0.1)] border border-rose-100 p-4 sm:p-6 flex flex-col relative overflow-y-auto custom-scrollbar">
                 
                 {sharedUsers.length > 0 && (
                     <div className="mb-4 p-3 bg-rose-50/50 rounded-2xl border border-rose-100 flex items-center justify-center gap-3 shrink-0">
@@ -219,13 +243,16 @@ export default function CalendarPage() {
             </nav>
 
             <style jsx global>{`
-                .calendar-container .react-calendar { width: 100% !important; height: 100% !important; background: transparent !important; border: none !important; font-family: inherit; display: flex; flex-direction: column; }
-                .calendar-container .react-calendar__navigation { height: 60px; margin-bottom: 10px; }
+                /* 【変更】高さの自動調整とスクロール対応。はみ出ても潰れないようにする */
+                .calendar-container .react-calendar { width: 100% !important; height: auto !important; min-height: 100% !important; background: transparent !important; border: none !important; font-family: inherit; display: flex; flex-direction: column; }
+                .calendar-container .react-calendar__navigation { height: 60px; margin-bottom: 10px; flex-shrink: 0; }
                 .calendar-container .react-calendar__navigation button { color: #be123c; font-weight: 900; font-size: 1.2rem; border-radius: 12px; transition: all 0.2s; }
                 .calendar-container .react-calendar__navigation button:hover { background-color: #ffe4e6; transform: scale(0.98); }
-                .calendar-container .react-calendar__viewContainer, .calendar-container .react-calendar__month-view, .calendar-container .react-calendar__month-view > div, .calendar-container .react-calendar__month-view > div > div { height: 100%; display: flex; flex-direction: column; flex: 1; }
+                .calendar-container .react-calendar__viewContainer, .calendar-container .react-calendar__month-view, .calendar-container .react-calendar__month-view > div, .calendar-container .react-calendar__month-view > div > div { display: flex; flex-direction: column; flex: 1; }
                 .calendar-container .react-calendar__month-view__days { flex: 1; display: flex !important; flex-wrap: wrap; }
-                .calendar-container .react-calendar__tile { border-radius: 16px; font-weight: bold; color: #881337; transition: all 0.2s; font-size: clamp(1rem, 2vw, 1.5rem); position: relative; display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0.5em 0.2em !important; }
+                /* 【変更】タイルの最小高さを設定して、スマホで潰れずにちゃんとスクロールされるようにする */
+                .calendar-container .react-calendar__tile { border-radius: 16px; font-weight: bold; color: #881337; transition: all 0.2s; font-size: clamp(1rem, 2vw, 1.5rem); position: relative; display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0.5em 0.2em !important; min-height: 65px; }
+                @media (min-width: 640px) { .calendar-container .react-calendar__tile { min-height: 85px; } }
                 .calendar-container .react-calendar__tile:hover { background: #fecdd3; transform: scale(0.95); }
                 .calendar-container .react-calendar__tile--now { background: #ffe4e6; color: #e11d48; font-weight: 900; }
                 .calendar-container .react-calendar__tile--active, .calendar-container .react-calendar__tile--active:enabled:hover { background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); color: white !important; box-shadow: 0 0 20px rgba(225, 29, 72, 0.5); border-radius: 20px; }
@@ -234,6 +261,11 @@ export default function CalendarPage() {
                 .calendar-container abbr[title] { text-decoration: none; }
                 /* iPhoneの画面下部の安全領域（セーフエリア）を確保 */
                 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+                /* 【追加】スクロールバーを可愛くする設定 */
+                .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #fecdd3; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #fda4af; }
             `}</style>
         </div>
     );
