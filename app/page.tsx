@@ -13,7 +13,7 @@ export default function Login() {
     const [message, setMessage] = useState("");
     const router = useRouter();
 
-    // 【復活】すでにログイン状態なら、自動でカレンダー画面に飛ばす！
+    // すでにログイン状態なら、自動でカレンダー画面に飛ばす
     useEffect(() => {
         const checkUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -34,7 +34,6 @@ export default function Login() {
             if (error) {
                 setMessage(error.message);
             } else {
-                // 【修正】ココ！ "/" じゃなくて "/calendar" に直したよ！
                 router.push("/calendar"); 
             }
         } else {
@@ -42,7 +41,8 @@ export default function Login() {
             if (error) {
                 setMessage(error.message);
             } else {
-                setMessage("確認メールを送信しました！メールのリンクをクリックしてください。");
+                // 【修正】メール認証なし！登録成功したら即カレンダーへGO！
+                router.push("/calendar");
             }
         }
         setLoading(false);
@@ -84,7 +84,7 @@ export default function Login() {
                     </div>
 
                     {message && (
-                        <p className={`text-sm text-center font-bold p-3 rounded-xl ${message.includes("確認") ? "bg-rose-100 text-rose-600" : "bg-red-100 text-red-600"}`}>
+                        <p className="text-sm text-center font-bold p-3 rounded-xl bg-red-100 text-red-600">
                             {message}
                         </p>
                     )}
